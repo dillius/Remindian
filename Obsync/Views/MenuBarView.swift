@@ -182,30 +182,31 @@ struct MenuBarView: View {
     }
 
     private func openMainWindow() {
-        // Switch to regular app so we can own the menu bar and show windows
         NSApp.setActivationPolicy(.regular)
         NSApplication.shared.activate(ignoringOtherApps: true)
 
-        // Show every normal-level window. The SwiftUI WindowGroup window
-        // survives close (isReleasedWhenClosed=false) but becomes invisible.
-        // orderFront on ALL of them ensures the right one appears.
-        var found = false
-        for window in NSApplication.shared.windows {
-            if window.level == .normal && !window.isVisible {
-                window.makeKeyAndOrderFront(nil)
-                found = true
-                break
-            }
+        // Find the main window by identifier (tagged in AppDelegate at launch).
+        // This is reliable regardless of window level, visibility, or macOS version.
+        if let mainWindow = NSApplication.shared.windows.first(where: {
+            $0.identifier?.rawValue == "main-window"
+        }) {
+            mainWindow.makeKeyAndOrderFront(nil)
+            return
         }
 
-        // If nothing was found, it means the window was destroyed.
-        // Trigger SwiftUI to recreate the WindowGroup by opening a new instance.
-        if !found {
-            // On macOS 14+, we can use openWindow; on 13, sendAction
-            if #available(macOS 14, *) {
-                NSApp.sendAction(Selector("newWindowForTab:"), to: nil, from: nil)
-            }
-        }
+        // Window was released or never tagged — recreate it programmatically.
+        let contentView = ContentView().environmentObject(SyncManager.shared)
+        let hostingController = NSHostingController(rootView: contentView)
+        let window = NSWindow(contentViewController: hostingController)
+        window.identifier = NSUserInterfaceItemIdentifier("main-window")
+        window.title = "Remindian"
+        window.setContentSize(NSSize(width: 900, height: 650))
+        window.styleMask = [.titled, .closable, .resizable, .fullSizeContentView]
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.isReleasedWhenClosed = false
+        window.center()
+        window.makeKeyAndOrderFront(nil)
     }
 
     private func openAboutWindow() {

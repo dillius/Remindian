@@ -65,11 +65,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Keep the main SwiftUI window alive when closed (hide instead of release)
-        // so we can reshow it from the menu bar without losing the Liquid Glass layout
+        // so we can reshow it from the menu bar without losing the Liquid Glass layout.
+        // Tag it with an identifier so openMainWindow() can find it reliably
+        // regardless of window level or visibility state.
         safeInit("Window lifecycle") {
             DispatchQueue.main.async {
                 for window in NSApp.windows where window.level == .normal {
                     window.isReleasedWhenClosed = false
+                    if window.identifier == nil {
+                        window.identifier = NSUserInterfaceItemIdentifier("main-window")
+                    }
                 }
             }
         }
