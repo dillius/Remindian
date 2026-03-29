@@ -352,10 +352,16 @@ class SyncEngine {
             var processedObsidianIds: Set<String> = []
             var relinkedRemindersIds: Set<String> = []  // Track re-linked reminders to prevent duplicate deletion
 
-            // Track line offsets per file: when markTaskComplete inserts a recurrence
-            // line, all subsequent line numbers in that file shift down by 1.
-            // Key = filePath, Value = cumulative lines inserted above.
-            var fileLineOffsets: [String: Int] = [:]
+            // Track recurrence insertions per file: when markTaskComplete inserts a
+            // recurrence line, tasks BELOW that point shift down by 1. We record the
+            // original line number of each insertion so we can compute position-aware
+            // offsets (only tasks at or below the insertion point are affected).
+            var fileInsertions: [String: [Int]] = [:]
+
+            // Tasks that had completion writeback in this cycle. Their vault line
+            // content changed (- [ ] → - [x] + ✅), making originalLine stale for
+            // any subsequent metadata writeback on the same task.
+            var completionWritebackIds: Set<String> = Set()
 
             for mapping in syncState.mappings {
                 let obsidianTask = obsidianMap[mapping.obsidianId]
@@ -432,13 +438,15 @@ class SyncEngine {
                                             errorMessage: "File modified during sync"
                                         ))
                                     } else if !config.dryRunMode {
-                                        // Build an adjusted task for line-offset tracking
+                                        // Build an adjusted task: only count recurrence insertions
+                                        // that occurred at or above this task's original line.
                                         var adjustedTask = oTask
                                         if let src = oTask.obsidianSource {
-                                            let adjustedLine = src.lineNumber + (fileLineOffsets[src.filePath] ?? 0)
+                                            let insertions = fileInsertions[src.filePath] ?? []
+                                            let offset = insertions.filter { $0 <= src.lineNumber }.count
                                             adjustedTask.obsidianSource = SyncTask.ObsidianSource(
                                                 filePath: src.filePath,
-                                                lineNumber: adjustedLine,
+                                                lineNumber: src.lineNumber + offset,
                                                 originalLine: src.originalLine
                                             )
                                         }
@@ -449,8 +457,9 @@ class SyncEngine {
                                             config: config
                                         )
                                         if inserted > 0, let src = oTask.obsidianSource {
-                                            fileLineOffsets[src.filePath, default: 0] += inserted
+                                            fileInsertions[src.filePath, default: []].append(src.lineNumber)
                                         }
+                                        completionWritebackIds.insert(mapping.obsidianId)
                                         debugLog("[SyncEngine] Completion writeback succeeded for: \"\(oTask.title)\" (lines inserted: \(inserted))")
                                         result.completionsWrittenBack += 1
                                         result.details.append(SyncLogDetail(
@@ -484,7 +493,9 @@ class SyncEngine {
                             // Write back when Reminders changed but Obsidian didn't
                             // (meaning the change originated from Reminders, not Obsidian).
                             // All changes are applied atomically in a single file write.
-                            if rChanged && !oChanged {
+                            // Skip if completion writeback already modified this task's
+                            // vault line — originalLine is stale and the task is done.
+                            if rChanged && !oChanged && !completionWritebackIds.contains(mapping.obsidianId) {
                                 if fileNotModifiedBeforeSync {
                                     var metadataChanges = MetadataChanges()
                                     var changeDescriptions: [String] = []
@@ -527,19 +538,33 @@ class SyncEngine {
                                         }
                                     }
 
-                                    // Apply all metadata changes atomically
+                                    // Apply all metadata changes atomically.
+                                    // Wrapped in its own do/catch so a writeback failure
+                                    // doesn't prevent the destination update below.
                                     if metadataChanges.hasChanges {
                                         if !config.dryRunMode {
                                             var adjustedTask = oTask
                                             if let src = oTask.obsidianSource {
-                                                let adjustedLine = src.lineNumber + (fileLineOffsets[src.filePath] ?? 0)
+                                                let insertions = fileInsertions[src.filePath] ?? []
+                                                let offset = insertions.filter { $0 <= src.lineNumber }.count
                                                 adjustedTask.obsidianSource = SyncTask.ObsidianSource(
                                                     filePath: src.filePath,
-                                                    lineNumber: adjustedLine,
+                                                    lineNumber: src.lineNumber + offset,
                                                     originalLine: src.originalLine
                                                 )
                                             }
-                                            try source.updateTaskMetadata(task: adjustedTask, changes: metadataChanges, config: config)
+                                            do {
+                                                try source.updateTaskMetadata(task: adjustedTask, changes: metadataChanges, config: config)
+                                            } catch {
+                                                debugLog("[SyncEngine] Metadata writeback failed for \"\(oTask.title)\": \(error)")
+                                                result.errors.append(error)
+                                                result.details.append(SyncLogDetail(
+                                                    action: .error,
+                                                    taskTitle: oTask.title,
+                                                    filePath: oTask.obsidianSource?.filePath,
+                                                    errorMessage: "Metadata writeback failed: \(error.localizedDescription)"
+                                                ))
+                                            }
                                         }
                                         result.metadataWrittenBack += changeDescriptions.count
                                         result.details.append(SyncLogDetail(

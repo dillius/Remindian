@@ -46,6 +46,7 @@
 		T03 /* TaskNotesParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T12; };
 		T04 /* ConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T13; };
 		T05 /* PersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T14; };
+		T06 /* WritebackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = T15; };
 		I01 /* RemindersIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = I10; };
 /* End PBXBuildFile section */
 
@@ -110,6 +111,7 @@
 		T12 /* TaskNotesParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskNotesParserTests.swift; sourceTree = "<group>"; };
 		T13 /* ConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurationTests.swift; sourceTree = "<group>"; };
 		T14 /* PersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceTests.swift; sourceTree = "<group>"; };
+		T15 /* WritebackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WritebackTests.swift; sourceTree = "<group>"; };
 		I00 /* RemindianIntegrationTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RemindianIntegrationTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		I10 /* RemindersIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemindersIntegrationTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -258,6 +260,7 @@
 				T12 /* TaskNotesParserTests.swift */,
 				T13 /* ConfigurationTests.swift */,
 				T14 /* PersistenceTests.swift */,
+				T15 /* WritebackTests.swift */,
 			);
 			path = RemindianTests;
 			sourceTree = "<group>";
@@ -428,6 +431,7 @@
 				T03 /* TaskNotesParserTests.swift in Sources */,
 				T04 /* ConfigurationTests.swift in Sources */,
 				T05 /* PersistenceTests.swift in Sources */,
+				T06 /* WritebackTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

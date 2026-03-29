@@ -82,9 +82,9 @@ try data.write(to: url)
 
 ---
 
-## HIGH — Stale Line Numbers in Multi-Task Edits
+## ~~HIGH — Stale Line Numbers in Multi-Task Edits~~ RESOLVED
 
-**`ObsidianService.swift`** — When sync completes a task that has recurrence, it inserts a new recurrence line, shifting all subsequent line numbers by +1. If the same sync cycle then needs to edit another task lower in the same file, it uses the original (now-wrong) line number. The content-mismatch guard prevents data corruption but causes the second edit to fail silently.
+**`SyncEngine.swift`** — Fixed by replacing the per-file cumulative offset counter (`fileLineOffsets`) with position-aware insertion tracking (`fileInsertions`). Each recurrence insertion records the original line number where it occurred; subsequent tasks only apply offsets from insertions at or above their own position. Also: completion writeback now marks the task so metadata writeback is skipped for the same task (the line content changed), and metadata writeback errors no longer cascade to block the destination update.
 
 ---
 
