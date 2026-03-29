@@ -43,6 +43,10 @@ struct RemindianApp: App {
 
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Skip all app initialization when running under a test host.
+        // Tests should not trigger permission prompts, syncs, or side effects.
+        guard NSClassFromString("XCTestCase") == nil else { return }
+
         // Each step is isolated so one failure doesn't crash the whole app.
         // Subsystem failures are logged but non-fatal.
 

@@ -8,14 +8,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Build
 xcodebuild -scheme Remindian -configuration Debug build
 
-# Run tests
+# Run unit tests
 xcodebuild test -scheme Remindian -destination 'platform=macOS'
+
+# Run integration tests (requires Reminders access — see below)
+xcodebuild test -scheme RemindianIntegrationTests -destination 'platform=macOS'
 
 # Open in Xcode
 open ObsidianRemindersSync.xcodeproj
 ```
 
-The project file is `ObsidianRemindersSync.xcodeproj` with two targets: `Remindian` (app) and `RemindianTests` (tests). The only scheme is `Remindian`. Requires Xcode 15.0+ and macOS 13.0+ deployment target.
+The project file is `ObsidianRemindersSync.xcodeproj` with three targets:
+- `Remindian` (app) — scheme `Remindian`
+- `RemindianTests` (unit tests) — runs via the `Remindian` scheme
+- `RemindianIntegrationTests` (integration tests) — separate scheme `RemindianIntegrationTests`
+
+Requires Xcode 15.0+ and macOS 13.0+ deployment target. App launch side effects (syncing, permissions, hotkeys) are disabled when running under a test host.
 
 ## Architecture
 
